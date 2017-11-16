@@ -2,15 +2,24 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/types.h>
 
 #include "commands.h"
 #include "built_in.h"
+
+char **inp;
+int childpid;
+int l;
 
 static struct built_in_command built_in_commands[] = {
   { "cd", do_cd, validate_cd_argv },
   { "pwd", do_pwd, validate_pwd_argv },
   { "fg", do_fg, validate_fg_argv }
 };
+
+char *pos[6] = { "/usr/local/bin/", "/usr/bin/", "usr/sbin/", "/bin/", "/sbin/" };
 
 static int is_built_in_command(const char* command_name)
 {
@@ -50,7 +59,65 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
     } else if (strcmp(com->argv[0], "exit") == 0) {
       return 1;
     } else {
+      if(!access(com->argv[0],0))
+      {
+        pid_t par = fork();
+        int status;
+        int idx=(com->argc)-1;
+        //child & &x
+        if(!par && strcmp(com->argv[idx],"&"))
+          execv(com->argv[0],com->argv);
+        //child & &o
+        else if(!par && !strcmp(com->argv[idx],"&"))
+        {
+          com->argv[idx]=0;//&reset
+          execv(com->argv[0],com->argv);
+        }
+        //par & &x
+        else if(par && strcmp(com->argv[1],"&"))
+          wait(&status);
+        //par & &o
+        else if(par && !strcmp(com->argv[idx],"&"))
+        {
+          printf("start\n");
+          l = com->argc -1;
+          inp = (char**)malloc(com->argc*sizeof(char*));
+          for(int i=0;i<l;i++)
+          {
+            int size = strlen(com->argv[i]);
+            inp[i] = (char*)malloc(sizeof(char)*(size+1));
+            strcpy(inp[i],com->argv[i]);
+          }
+          childpid = par;
+          //
+          printf("childpid : %d\n",childpid);
+          return 0;
+        }
+        else return -1;
+      }
+      //extra
+      else
+      {
+        for(int i=0;i<6;i++)
+        {
+          char test[200];
+          strcpy(test,pos[i]);
+          strcat(test, com->argv[0]);
+          if(!access(test,0))
+          {
+            strcpy(com->argv[0],test);
+            int par = fork();
+            int status;
+            if(par)
+            {
+              wait(&status);
+              return 0;
+            }
+            else execv(com->argv[0],com->argv);
+          }
+        }
       fprintf(stderr, "%s: command not found\n", com->argv[0]);
+      }
       return -1;
     }
   }

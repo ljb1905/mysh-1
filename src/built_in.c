@@ -9,12 +9,13 @@
 #include "commands.h"
 #include "built_in.h"
 
-char **inp;
+/*char **inp;
 int childpid;
-int l;
+int l;*/
 
 void printinp()
 {
+  printf("%d\n",l);
   for(int i=0;i<l;i++)
   {
      if(i==l-1) printf("%s\n",inp[i]);
