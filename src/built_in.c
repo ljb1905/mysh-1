@@ -1,12 +1,22 @@
 #include <stdio.h>
 #include <string.h>
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <linux/limits.h>
+#include <sys/wait.h>
 
+#include "commands.h"
 #include "built_in.h"
+
+void printinp()
+{
+  for(int i=0;i<l;i++)
+  {
+     if(i==l-1) printf("%s\n",inp[i]);
+     else printf("%s ",inp[i]);
+  }
+}
 
 int do_cd(int argc, char** argv) {
   if (!validate_cd_argv(argc, argv))
@@ -37,7 +47,15 @@ int do_fg(int argc, char** argv) {
     return -1;
 
   // TODO: Fill this.
-
+  int status;
+  if(waitpid(childpid,&status,WNOHANG) == -1)
+  {
+    printf("%d running ",childpid);
+    printinp();
+    wait(&status);
+  }
+  printf("%d DONE",childpid);
+  printinp();
   return 0;
 }
 
