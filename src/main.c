@@ -7,6 +7,7 @@
 #include "commands.h"
 #include "built_in.h"
 #include "utils.h"
+#include "signal_handlers.h"
 
 int main()
 {
@@ -15,7 +16,7 @@ int main()
   while (1) {
     signal(SIGINT, catch_sigint);
     signal(SIGTSTP,catch_sigtstp);
-    memset(but, 0, 8096);
+    memset(buf, 0, 8096);
     fgets(buf, 8096, stdin);
 
     struct single_command commands[512];
