@@ -9,6 +9,10 @@
 #include "commands.h"
 #include "built_in.h"
 
+char **inp;
+int childpid;
+int l;
+
 void printinp()
 {
   for(int i=0;i<l;i++)
