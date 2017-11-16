@@ -19,7 +19,12 @@ static struct built_in_command built_in_commands[] = {
   { "fg", do_fg, validate_fg_argv }
 };
 
-char *pos[6] = { "/usr/local/bin/", "/usr/bin/", "usr/sbin/", "/bin/", "/sbin/" };
+char *pos[5] = {
+  "/usr/local/bin/",
+  "/usr/bin/",
+  "/usr/sbin/",
+  "/bin/",
+  "/sbin/" };
 
 static int is_built_in_command(const char* command_name)
 {
@@ -59,7 +64,7 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
     } else if (strcmp(com->argv[0], "exit") == 0) {
       return 1;
     } else {
-      if(!access(com->argv[0],0))
+      if(!access(com->argv[0],0) && n_commands == 1)
       {
         pid_t par = fork();
         int status;
@@ -72,13 +77,13 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
         {
           printf("pid : %d\n",getpid());
           com->argv[idx]=0;//&reset
-         // execv(com->argv[0],com->argv);
-          for(int i=0;i<20;i++)
+          execv(com->argv[0],com->argv);
+/*for(int i=0;i<20;i++)
 {
 printf("%d\n",i);
 sleep(1);
 }
-exit(1);
+exit(1);*/
         }
         //par & &x
         else if(par && strcmp(com->argv[idx],"&")) 
@@ -103,7 +108,9 @@ exit(1);
       //extra
       else
       {
-        for(int i=0;i<6;i++)
+//
+//printf("sajdklf\n");
+        for(int i=0;i<5;i++)
         {
           char test[200];
           strcpy(test,pos[i]);

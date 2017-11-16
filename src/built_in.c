@@ -52,7 +52,7 @@ int do_fg(int argc, char** argv) {
 
   // TODO: Fill this.
   int status;
-  if(waitpid(childpid,&status,WNOHANG) != -1)
+  if(waitpid(childpid,&status,WNOHANG) == 0)
   {
     printf("%d running ",childpid);
     printinp();
