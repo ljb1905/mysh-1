@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <memory.h>
+#include <signal.h>
 
 #include "commands.h"
 #include "built_in.h"
@@ -11,6 +13,9 @@ int main()
   char buf[8096];
 
   while (1) {
+    signal(SIGINT, catch_sigint);
+    signal(SIGTSTP,catch_sigtstp);
+    memset(but, 0, 8096);
     fgets(buf, 8096, stdin);
 
     struct single_command commands[512];
