@@ -15,7 +15,6 @@ int l;*/
 
 void printinp()
 {
-  printf("%d\n",l);
   for(int i=0;i<l;i++)
   {
      if(i==l-1) printf("%s\n",inp[i]);
@@ -53,13 +52,13 @@ int do_fg(int argc, char** argv) {
 
   // TODO: Fill this.
   int status;
-  if(waitpid(childpid,&status,WNOHANG) == -1)
+  if(waitpid(childpid,&status,WNOHANG) != -1)
   {
     printf("%d running ",childpid);
     printinp();
     wait(&status);
   }
-  printf("%d DONE",childpid);
+  printf("%d DONE ",childpid);
   printinp();
   return 0;
 }

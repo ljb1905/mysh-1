@@ -70,11 +70,18 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
         //child & &o
         else if(!par && !strcmp(com->argv[idx],"&"))
         {
+          printf("pid : %d\n",getpid());
           com->argv[idx]=0;//&reset
-          execv(com->argv[0],com->argv);
+         // execv(com->argv[0],com->argv);
+          for(int i=0;i<20;i++)
+{
+printf("%d\n",i);
+sleep(1);
+}
+exit(1);
         }
         //par & &x
-        else if(par && strcmp(com->argv[1],"&"))
+        else if(par && strcmp(com->argv[idx],"&")) 
           wait(&status);
         //par & &o
         else if(par && !strcmp(com->argv[idx],"&"))
@@ -89,8 +96,6 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
             strcpy(inp[i],com->argv[i]);
           }
           childpid = par;
-          //
-          printf("childpid : %d\n",childpid);
           return 0;
         }
         else return -1;
