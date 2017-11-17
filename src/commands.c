@@ -1,3 +1,7 @@
+#define SOCK_PATH "tpf_unix_sock.server"
+#define SERVER_PATH "tpf_unix_sock.server"
+#define CLIENT_PATH "tpf_unix_sock.client"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -5,6 +9,11 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <sys/types.h>
+#include <errno.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <pthread.h>
+#include <signal.h>
 
 #include "commands.h"
 #include "built_in.h"
@@ -26,6 +35,57 @@ char *pos[5] = {
   "/bin/",
   "/sbin/" };
 
+void *clientf(struct single_command (*in)[512])
+{
+//
+//printf("2\n");
+  int c_sock,len,rc;
+  struct sockaddr_un c_sockadd;
+  struct sockaddr_un s_sockadd;
+  memset(&c_sockadd, 0, sizeof(struct sockaddr_un));
+  memset(&s_sockadd, 0, sizeof(struct sockaddr_un));
+
+  c_sock = socket(AF_UNIX, SOCK_STREAM,0);
+  if(c_sock==-1)
+  {
+    printf("SOCKET ERROR\n"); // check
+    exit(1);
+  }
+  c_sockadd.sun_family = AF_UNIX;
+  strcpy(c_sockadd.sun_path, CLIENT_PATH);
+  len = sizeof(c_sockadd);
+  unlink(CLIENT_PATH);
+
+  rc = bind(c_sock, (struct sockaddr *)&c_sockadd,len);
+  if(rc==-1)
+  {
+    printf("BIND ERROR\n");//check
+    close(c_sock);
+    exit(1);
+  }
+  s_sockadd.sun_family = AF_UNIX;
+  strcpy(s_sockadd.sun_path, SERVER_PATH);
+//
+//printf("2\n");
+  int chk = connect(c_sock,(struct sockaddr *)&s_sockadd,len);
+  if(chk==-1) {
+  printf("CONNECTION ERROR\n");
+  close(c_sock);
+  exit(1);
+  }
+  int tmp = dup(STDOUT_FILENO);
+  dup2(c_sock, STDOUT_FILENO);
+  close(c_sock);
+  evaluate_command(1,in);
+  close(STDOUT_FILENO);
+  dup2(tmp,STDOUT_FILENO);
+  close(c_sock);
+  close(tmp);
+//
+//printf("2\n");
+  pthread_exit(NULL);
+}
+
 static int is_built_in_command(const char* command_name)
 {
   static const int n_built_in_commands = sizeof(built_in_commands) / sizeof(built_in_commands[0]);
@@ -44,7 +104,70 @@ static int is_built_in_command(const char* command_name)
  */
 int evaluate_command(int n_commands, struct single_command (*commands)[512])
 {
-  if (n_commands > 0) {
+  if(n_commands >= 2) {
+//
+//printf("1\n");
+      void *status;
+      struct single_command in[512];
+      struct single_command out[512];
+      memcpy(in,&((*commands)[0]),sizeof(struct single_command));
+      memcpy(out,&((*commands)[1]),sizeof(struct single_command));
+
+      int len,s_sock,c_sock;
+      struct sockaddr_un s_add,c_add;
+      pthread_t thr;
+
+      memset(&s_add,0,sizeof(struct sockaddr_un));
+      memset(&c_add,0,sizeof(struct sockaddr_un));
+      s_sock = socket(AF_UNIX, SOCK_STREAM,0);
+      if(s_sock ==-1)
+      {
+        printf("SOCKET ERROR!\n");
+        exit(1);
+      }
+      s_add.sun_family = AF_UNIX;
+      strcpy(s_add.sun_path,SOCK_PATH);
+      len = sizeof(s_add);
+
+      unlink(SOCK_PATH);
+
+      int rc = bind(s_sock, (struct sockaddr*)&s_add,sizeof(s_add));
+      if(rc==-1)
+      {
+        printf("BIND ERROR!\n");
+        close(s_sock);
+        exit(1);
+      }
+      int thread1 = pthread_create(&thr,NULL,(void*)clientf,&in);
+      if(thread1<0)
+      {
+        printf("THREAD ERROR!\n");
+        exit(1);
+      }
+      rc = listen(s_sock,5);
+      if(rc==-1){
+        printf("LISTEN ERROR!\n");
+        close(s_sock);
+        exit(1);
+      }
+      c_sock = accept(s_sock,(struct sockaddr*)&c_add,&len);
+      pthread_join(thr,&status);
+//
+//printf("1\n");
+      int tmp = dup(STDIN_FILENO);
+      dup2(c_sock,STDIN_FILENO);
+      evaluate_command(1,&out);
+      close(STDIN_FILENO);
+      dup2(tmp,STDIN_FILENO);
+      close(c_sock);
+      close(tmp);
+      close(s_sock);
+//
+//printf("1\n");
+      return 0;
+  }
+
+  else if (n_commands > 0) {
     struct single_command* com = (*commands);
 
     assert(com->argc != 0);
